@@ -63,6 +63,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Check npm auth
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Release and publish to npm
         run: npx semantic-release
         env:
