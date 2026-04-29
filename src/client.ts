@@ -35,7 +35,7 @@ export class PesapalClient {
   }
 
   /**
-   * Makes an authenticated HTTP request to the Pesapal API.
+   * Makes an authenticated HTTP request to the Pesapal API V3.
    * @param method The HTTP method (GET, POST, etc.).
    * @param url The relative URL endpoint.
    * @param data Optional request payload.
