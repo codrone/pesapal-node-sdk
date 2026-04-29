@@ -15,13 +15,14 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 - 🪵 Pluggable logging hooks
 - 🌍 Sandbox & Live environment support
 - 🧪 Comprehensive test suite and CI/CD ready
+- 📃 JSDOC on all methods
 
 ---
 
 ## 📦 Installation
 
 ```bash
-npm install pesapal-node
+npm i pesapal-v3-node
 ```
 
 ---
@@ -29,7 +30,7 @@ npm install pesapal-node
 ## 🚀 Quick Start
 
 ```ts
-import { Pesapal } from 'pesapal-node';
+import { Pesapal } from 'pesapal-v3-node';
 
 const pesapal = new Pesapal({
   consumerKey: process.env.PESAPAL_CONSUMER_KEY!,
@@ -40,7 +41,7 @@ const pesapal = new Pesapal({
 // 1. Submit an Order
 const order = await pesapal.orders.submitOrder({
   id: 'ORDER-001',
-  currency: 'KES',
+  currency: 'UGX',
   amount: 100.00,
   description: 'Test payment',
   callback_url: 'https://your-app.com/callback',
@@ -98,7 +99,7 @@ await pesapal.orders.getStatus(orderTrackingId: string);
 ### IPN (`pesapal.client.ipn`)
 Note: Access IPN via the internal client resource.
 ```ts
-import { IPNResource } from 'pesapal-node/ipn';
+import { IPNResource } from 'pesapal-v3-node/ipn';
 const ipn = new IPNResource(pesapal.client);
 
 // Register IPN URL
@@ -125,7 +126,7 @@ The SDK automatically retries requests that fail due to:
 ### Normalised Errors
 All errors are caught and thrown as `PesapalError`:
 ```ts
-import { PesapalError } from 'pesapal-node';
+import { PesapalError } from 'pesapal-v3-node';
 
 try {
   await pesapal.orders.submitOrder(payload);
