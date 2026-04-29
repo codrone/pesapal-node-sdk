@@ -9,25 +9,19 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 ## ✨ Features
 
 - ✅ Full TypeScript support (typed requests & responses)
-- 🔐 Built-in authentication handling
-- 🔁 Automatic retries with exponential backoff
-- 🧾 Structured resources (Transactions, IPN, etc.)
+- 🔐 Built-in automatic authentication & token management
+- 🔁 Automatic retries with exponential backoff for transient failures
+- 🧾 Structured resources (Orders, IPN)
 - 🪵 Pluggable logging hooks
-- 🧩 Middleware support (extensible)
 - 🌍 Sandbox & Live environment support
+- 🧪 Comprehensive test suite and CI/CD ready
 
 ---
 
 ## 📦 Installation
 
 ```bash
-npm install pesapal-v3-node
-```
-
-or
-
-```bash
-yarn add pesapal-v3-node
+npm install pesapal-node
 ```
 
 ---
@@ -35,30 +29,35 @@ yarn add pesapal-v3-node
 ## 🚀 Quick Start
 
 ```ts
-import {Pesapal} from 'pesapal-v3-node';
+import { Pesapal } from 'pesapal-node';
 
 const pesapal = new Pesapal({
   consumerKey: process.env.PESAPAL_CONSUMER_KEY!,
   consumerSecret: process.env.PESAPAL_CONSUMER_SECRET!,
-  environment: 'sandbox',
+  environment: 'sandbox', // or 'live'
 });
 
-const order = await pesapal.transactions.submitOrder({
+// 1. Submit an Order
+const order = await pesapal.orders.submitOrder({
   id: 'ORDER-001',
-  currency: 'UGX',
-  amount: 10000,
+  currency: 'KES',
+  amount: 100.00,
   description: 'Test payment',
-  callback_url: 'https://example.com/callback',
-  notification_id: 'YOUR_IPN_ID',
+  callback_url: 'https://your-app.com/callback',
+  notification_id: 'your-ipn-id',
   billing_address: {
     email_address: 'customer@example.com',
-    phone_number: '256700000000',
+    phone_number: '0700000000',
     first_name: 'John',
     last_name: 'Doe',
   },
 });
 
-console.log(order.redirect_url);
+console.log('Redirect URL:', order.redirect_url);
+
+// 2. Check Transaction Status
+const status = await pesapal.orders.getStatus('order-tracking-id');
+console.log('Status:', status.status);
 ```
 
 ---
@@ -66,31 +65,13 @@ console.log(order.redirect_url);
 ## ⚙️ Configuration
 
 ```ts
-interface PesapalConfig {
-  consumerKey: string;
-  consumerSecret: string;
-  environment?: 'sandbox' | 'live';
-  retries?: number;
-  timeoutMs?: number;
-  logger?: {
-    debug?: (...args: unknown[]) => void;
-    info?: (...args: unknown[]) => void;
-    warn?: (...args: unknown[]) => void;
-    error?: (...args: unknown[]) => void;
-  };
-}
-```
-
-### Example with advanced config
-
-```ts
 const pesapal = new Pesapal({
   consumerKey: '...',
   consumerSecret: '...',
-  environment: 'sandbox',
-  retries: 3,
-  timeoutMs: 10000,
-  logger: console,
+  environment: 'sandbox', // Default: sandbox
+  retries: 3,            // Number of retries for transient failures (Default: 2)
+  timeoutMs: 10000,      // Request timeout in milliseconds (Default: 10000)
+  logger: console,       // Optional logger (debug, info, warn, error)
 });
 ```
 
@@ -98,137 +79,81 @@ const pesapal = new Pesapal({
 
 ## 📚 API Reference
 
-### Transactions
+### Orders (`pesapal.orders`)
 
 #### Submit Order
-
+Initiates a transaction and returns a redirect URL.
 ```ts
-await pesapal.transactions.submitOrder(payload);
+await pesapal.orders.submitOrder(payload: SubmitOrderRequest);
 ```
 
 #### Get Transaction Status
-
+Checks the status of a transaction using its tracking ID.
 ```ts
-await pesapal.transactions.getStatus(orderTrackingId);
+await pesapal.orders.getStatus(orderTrackingId: string);
 ```
 
 ---
 
-### IPN (Instant Payment Notifications)
-
-#### Register IPN URL
-
+### IPN (`pesapal.client.ipn`)
+Note: Access IPN via the internal client resource.
 ```ts
-await pesapal.ipn.registerIPNUrl({
+import { IPNResource } from 'pesapal-node/ipn';
+const ipn = new IPNResource(pesapal.client);
+
+// Register IPN URL
+await ipn.registerIPNUrl({
   url: 'https://example.com/ipn',
   ipn_notification_type: 'POST',
 });
-```
 
-#### Get IPN List
-
-```ts
-await pesapal.ipn.getIPNList();
+// List Registered IPNs
+await ipn.getIPNList();
 ```
 
 ---
 
-## 🔁 Retries
+## 🔁 Retries & Error Handling
 
-Retries are enabled by default and apply to:
+### Automatic Retries
+The SDK automatically retries requests that fail due to:
+- Network issues (e.g., `ECONNRESET`, `ETIMEDOUT`)
+- Server-side errors (5xx)
+- Rate limiting (429)
+- Timeouts (408)
 
-- Network errors
-- Timeout errors
-- HTTP 408, 429, and 5xx responses
-
-Uses exponential backoff:
-
-```
-500ms → 1000ms → 2000ms → ...
-```
-
-Customize:
-
+### Normalised Errors
+All errors are caught and thrown as `PesapalError`:
 ```ts
-const pesapal = new Pesapal({
-  consumerKey: '...',
-  consumerSecret: '...',
-  retries: 5,
-});
-```
+import { PesapalError } from 'pesapal-node';
 
----
-
-## 🪵 Logging
-
-Provide a logger to observe SDK behavior:
-
-```ts
-const pesapal = new Pesapal({
-  consumerKey: '...',
-  consumerSecret: '...',
-  logger: console,
-});
-```
-
-Supported methods:
-
-- `debug`
-- `info`
-- `warn`
-- `error`
-
----
-
-## 🧩 Middleware (Advanced)
-
-You can hook into request lifecycle:
-
-```ts
-const pesapal = new Pesapal({
-  consumerKey: '...',
-  consumerSecret: '...',
-  middleware: [
-    {
-      beforeRequest: (ctx) => {
-        console.log('Request:', ctx);
-      },
-      afterResponse: (ctx) => {
-        console.log('Response:', ctx);
-      },
-      onError: (ctx) => {
-        console.error('Error:', ctx);
-      },
-    },
-  ],
-});
-```
-
----
-
-## 🛑 Error Handling
-
-All errors are normalized into `PesapalError`:
-
-```ts
 try {
-  await pesapal.transactions.submitOrder(payload);
+  await pesapal.orders.submitOrder(payload);
 } catch (err) {
   if (err instanceof PesapalError) {
-    console.error(err.message);
-    console.error(err.status);
+    console.error(`Error: ${err.message} (Code: ${err.code}, Status: ${err.status})`);
   }
 }
 ```
 
 ---
 
-## 🧪 Development
+## 🧪 Development & Testing
+
+The project uses **Vitest** for unit testing and **tsup** for builds.
 
 ```bash
+# Install dependencies
 npm install
+
+# Run tests
+npm test
+
+# Build project (CJS, ESM, DTS)
 npm run build
-npm run test
+
+# Run full validation (lint, test, build)
+npm run prepublishOnly
 ```
 
 ---
@@ -237,68 +162,21 @@ npm run test
 
 ```
 src/
-  core/
-    client.ts
-    retries.ts
-    errors.ts
-  resources/
-    transactions.ts
-    ipn.ts
+  index.ts        # Main entry point (Pesapal class)
+  client.ts       # Core HTTP client with Auth integration
+  auth.ts         # Authentication logic & token management
+  orders.ts       # Order resource
+  ipn.ts          # IPN resource
+  errors.ts       # Error normalization
+  helpers/
+    retries.ts    # Retry logic
   types/
-    common.ts
-    transactions.ts
+    types.ts      # TypeScript definitions
+tests/            # Unit tests
 ```
-
----
-
-## 🔐 Environment
-
-- **Sandbox:** `https://cybqa.pesapal.com/pesapalv3`
-- **Live:** `https://pay.pesapal.com/v3`
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repo
-2. Create a feature branch
-3. Commit changes
-4. Open a pull request
 
 ---
 
 ## 📄 License
 
 MIT License
-
----
-
-## 💡 Notes
-
-- Tokens expire quickly (~5 minutes), handled internally
-- Always use environment variables for credentials
-- Recommended for Node.js 18+
-
----
-
-## 🚀 Roadmap
-
-- [ ] Refunds API
-- [ ] Subscription support
-- [ ] Webhook verification helpers
-- [ ] Auto token refresh optimization
-- [ ] Better test coverage
-
----
-
-## 🙌 Acknowledgements
-
-Built for developers integrating with Pesapal API 3.0.
-
----
-
-## 📬 Support
-
-For issues or questions, open a GitHub issue or contact the maintainer.
