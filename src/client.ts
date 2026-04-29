@@ -5,7 +5,7 @@ import { PesapalAuth } from "./auth.js";
 import { withRetries } from "./helpers/retries.js";
 
 /**
- * Internal HTTP client for interacting with the Pesapal API.
+ * Internal HTTP client for interacting with the Pesapal API V3.
  * Handles authentication, retries, and error normalization.
  */
 export class PesapalClient {
