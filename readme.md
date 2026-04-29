@@ -21,13 +21,13 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 ## 📦 Installation
 
 ```bash
-npm install pesapal-node-sdk
+npm install pesapal-v3-node
 ```
 
 or
 
 ```bash
-yarn add pesapal-node-sdk
+yarn add pesapal-v3-node
 ```
 
 ---
@@ -35,7 +35,7 @@ yarn add pesapal-node-sdk
 ## 🚀 Quick Start
 
 ```ts
-import {Pesapal} from 'pesapal-node-sdk';
+import {Pesapal} from 'pesapal-v3-node';
 
 const pesapal = new Pesapal({
   consumerKey: process.env.PESAPAL_CONSUMER_KEY!,
