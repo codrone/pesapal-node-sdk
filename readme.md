@@ -15,14 +15,14 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 - 🪵 Pluggable logging hooks
 - 🌍 Sandbox & Live environment support
 - 🧪 Comprehensive test suite and CI/CD ready
-- 📃 JSDOC on all methods
+- 📃 JSDoc on all methods
 
 ---
 
 ## 📦 Installation
 
 ```bash
-npm i pesapal-v3-node
+npm install pesapal-v3-node
 ```
 
 ---
@@ -38,14 +38,20 @@ const pesapal = new Pesapal({
   environment: 'sandbox', // or 'live'
 });
 
-// 1. Submit an Order
+// 1. Register IPN URL (Optional if you already have an ipn_id)
+const ipn = await pesapal.ipn.registerIPNUrl({
+  url: 'https://your-app.com/ipn',
+  ipn_notification_type: 'POST',
+});
+
+// 2. Submit an Order
 const order = await pesapal.orders.submitOrder({
   id: 'ORDER-001',
   currency: 'UGX',
   amount: 100.00,
   description: 'Test payment',
   callback_url: 'https://your-app.com/callback',
-  notification_id: 'your-ipn-id',
+  notification_id: ipn.ipn_id, // Use the ipn_id from step 1
   billing_address: {
     email_address: 'customer@example.com',
     phone_number: '0700000000',
@@ -56,8 +62,8 @@ const order = await pesapal.orders.submitOrder({
 
 console.log('Redirect URL:', order.redirect_url);
 
-// 2. Check Transaction Status
-const status = await pesapal.orders.getStatus('order-tracking-id');
+// 3. Check Transaction Status
+const status = await pesapal.orders.getStatus(order.order_tracking_id);
 console.log('Status:', status.status);
 ```
 
@@ -78,24 +84,6 @@ const pesapal = new Pesapal({
 
 ---
 
-### IPN (`pesapal.ipn`)
-
-#### Register IPN URL
-```ts
-await pesapal.ipn.registerIPNUrl({
-  url: 'https://example.com/ipn',
-  ipn_notification_type: 'POST',
-});
-```
-
-#### Get IPN List
-```ts
-await pesapal.ipn.getIPNList();
-```
-
-
----
-
 ## 📚 API Reference
 
 ### Orders (`pesapal.orders`)
@@ -112,6 +100,26 @@ Checks the status of a transaction using its tracking ID.
 await pesapal.orders.getStatus(orderTrackingId: string);
 ```
 
+---
+
+### IPN (`pesapal.ipn`)
+
+#### Register IPN URL
+Registers a URL to receive Instant Payment Notifications. Returns an `ipn_id` which must be used as `notification_id` when submitting orders.
+```ts
+await pesapal.ipn.registerIPNUrl({
+  url: 'https://example.com/ipn',
+  ipn_notification_type: 'POST',
+});
+```
+
+#### Get IPN List
+Retrieves all registered IPN URLs.
+```ts
+await pesapal.ipn.getIPNList();
+```
+
+---
 
 ## 🔁 Retries & Error Handling
 
@@ -140,19 +148,14 @@ try {
 
 ## 🧪 Development & Testing
 
-The project uses **Vitest** for unit testing and **tsup** for builds.
-
 ```bash
-# Install dependencies
-npm install
-
 # Run tests
 npm test
 
-# Build project (CJS, ESM, DTS)
+# Build project
 npm run build
 
-# Run full validation (lint, test, build)
+# Run full validation
 npm run prepublishOnly
 ```
 
@@ -172,7 +175,6 @@ src/
     retries.ts    # Retry logic
   types/
     types.ts      # TypeScript definitions
-tests/            # Unit tests
 ```
 
 ---
