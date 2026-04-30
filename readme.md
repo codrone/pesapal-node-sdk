@@ -78,6 +78,24 @@ const pesapal = new Pesapal({
 
 ---
 
+### IPN (`pesapal.ipn`)
+
+#### Register IPN URL
+```ts
+await pesapal.ipn.registerIPNUrl({
+  url: 'https://example.com/ipn',
+  ipn_notification_type: 'POST',
+});
+```
+
+#### Get IPN List
+```ts
+await pesapal.ipn.getIPNList();
+```
+
+
+---
+
 ## 📚 API Reference
 
 ### Orders (`pesapal.orders`)
@@ -94,25 +112,6 @@ Checks the status of a transaction using its tracking ID.
 await pesapal.orders.getStatus(orderTrackingId: string);
 ```
 
----
-
-### IPN (`pesapal.client.ipn`)
-Note: Access IPN via the internal client resource.
-```ts
-import { IPNResource } from 'pesapal-v3-node/ipn';
-const ipn = new IPNResource(pesapal.client);
-
-// Register IPN URL
-await ipn.registerIPNUrl({
-  url: 'https://example.com/ipn',
-  ipn_notification_type: 'POST',
-});
-
-// List Registered IPNs
-await ipn.getIPNList();
-```
-
----
 
 ## 🔁 Retries & Error Handling
 
