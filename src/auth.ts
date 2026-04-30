@@ -4,15 +4,14 @@ import { withRetries } from "./helpers/retries.js";
 
 /**
  * Handles authentication and token management for the Pesapal API.
+ * Includes in-memory caching to avoid redundant authentication requests.
  */
 export class PesapalAuth {
   private http: AxiosInstance;
+  private authPromise: Promise<PesapalAuthResponse> | null = null;
 
   public token?: string;
   public expiryDate?: string;
-  public status?: string;
-  public message?: string;
-  public error?: unknown | null;
 
   /**
    * Creates an instance of PesapalAuth.
@@ -35,12 +34,43 @@ export class PesapalAuth {
   }
 
   /**
-   * Requests a fresh authentication token from Pesapal.
+   * Checks if the current token is valid and not close to expiry.
+   * @returns True if the token is valid, false otherwise.
+   */
+  private isTokenValid(): boolean {
+    if (!this.token || !this.expiryDate) return false;
+
+    const expiry = new Date(this.expiryDate).getTime();
+    const now = Date.now();
+    // Buffer of 30 seconds to ensure the token doesn't expire mid-request
+    const buffer = 30 * 1000;
+
+    return expiry - now > buffer;
+  }
+
+  /**
+   * Requests a fresh authentication token from Pesapal or returns a cached one.
    * Tokens typically expire after 5 minutes.
    * @returns A promise resolving to the authentication response.
    */
   async authenticate(): Promise<PesapalAuthResponse> {
-    return withRetries(
+    // 1. Return cached data if valid
+    if (this.isTokenValid() && this.token && this.expiryDate) {
+      return {
+        token: this.token,
+        expiryDate: this.expiryDate,
+        status: "200",
+        message: "Cached token",
+        error: null,
+      };
+    }
+
+    // 2. Handle concurrent authentication requests
+    if (this.authPromise) {
+      return this.authPromise;
+    }
+
+    this.authPromise = withRetries(
       async () => {
         this.config.logger?.debug?.("Pesapal auth request started");
 
@@ -74,6 +104,10 @@ export class PesapalAuth {
           });
         },
       },
-    );
+    ).finally(() => {
+      this.authPromise = null;
+    });
+
+    return this.authPromise;
   }
 }

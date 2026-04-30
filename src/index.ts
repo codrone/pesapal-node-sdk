@@ -5,6 +5,11 @@ import type { PesapalConfig } from "./types/types.js";
 
 export * from "./types/types.js";
 export * from "./errors.js";
+export {
+  verifyIPNSignature,
+  parseIPN,
+  type PesapalIPN,
+} from "./helpers/ipn.js";
 
 /**
  * The main entry point for the Pesapal SDK.

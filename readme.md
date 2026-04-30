@@ -9,13 +9,24 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 ## ✨ Features
 
 - ✅ Full TypeScript support (typed requests & responses)
-- 🔐 Built-in automatic authentication & token management
+- 🔐 Built-in automatic authentication with **intelligent token caching**
 - 🔁 Automatic retries with exponential backoff for transient failures
+- 🛡️ **Client-side validation** for orders and IPNs (fail-fast)
 - 🧾 Structured resources (Orders, IPN)
+- 🔌 **IPN Security Utilities** (Signature verification & parsing)
 - 🪵 Pluggable logging hooks
 - 🌍 Sandbox & Live environment support
 - 🧪 Comprehensive test suite and CI/CD ready
 - 📃 JSDoc on all methods
+
+---
+
+## 🔐 Security Note
+
+> [!WARNING]
+> **NEVER** commit your `.env` file or hardcode live credentials in your source code. 
+> Always use environment variables to store your `consumerKey` and `consumerSecret`.
+> Ensure `.env` is included in your `.gitignore` file.
 
 ---
 
@@ -89,7 +100,7 @@ const pesapal = new Pesapal({
 ### Orders (`pesapal.orders`)
 
 #### Submit Order
-Initiates a transaction and returns a redirect URL.
+Initiates a transaction and returns a redirect URL. Includes client-side validation.
 ```ts
 await pesapal.orders.submitOrder(payload: SubmitOrderRequest);
 ```
@@ -105,7 +116,7 @@ await pesapal.orders.getStatus(orderTrackingId: string);
 ### IPN (`pesapal.ipn`)
 
 #### Register IPN URL
-Registers a URL to receive Instant Payment Notifications. Returns an `ipn_id` which must be used as `notification_id` when submitting orders.
+Registers a URL to receive Instant Payment Notifications. Returns an `ipn_id`.
 ```ts
 await pesapal.ipn.registerIPNUrl({
   url: 'https://example.com/ipn',
@@ -113,22 +124,39 @@ await pesapal.ipn.registerIPNUrl({
 });
 ```
 
-#### Get IPN List
-Retrieves all registered IPN URLs.
+#### Handle IPN Webhooks (Security)
+The SDK provides helpers to securely parse and verify IPN notifications from Pesapal.
+
 ```ts
-await pesapal.ipn.getIPNList();
+import { verifyIPNSignature, parseIPN } from 'pesapal-v3-node';
+
+// In your webhook controller (e.g., Express)
+app.post('/ipn', (req, res) => {
+    const rawBody = JSON.stringify(req.body);
+    const signature = req.headers['x-pesapal-signature']; // Placeholder header name
+    
+    // 1. Verify it came from Pesapal
+    const isValid = verifyIPNSignature(signature, rawBody, process.env.PESAPAL_CONSUMER_SECRET);
+    
+    if (isValid) {
+        // 2. Parse into a typed object
+        const ipnData = parseIPN(req.body);
+        console.log(`Update for Order: ${ipnData.OrderTrackingId}`);
+    }
+    
+    res.sendStatus(200);
+});
 ```
 
 ---
 
-## 🔁 Retries & Error Handling
+## 🔁 Retries & Performance
+
+### Token Caching
+The SDK automatically caches your authentication token and only requests a new one when the current one is near expiry. This eliminates unnecessary network round-trips.
 
 ### Automatic Retries
-The SDK automatically retries requests that fail due to:
-- Network issues (e.g., `ECONNRESET`, `ETIMEDOUT`)
-- Server-side errors (5xx)
-- Rate limiting (429)
-- Timeouts (408)
+The SDK automatically retries requests that fail due to network issues, 5xx errors, or rate limiting (429).
 
 ### Normalised Errors
 All errors are caught and thrown as `PesapalError`:
@@ -165,13 +193,14 @@ npm run prepublishOnly
 
 ```
 src/
-  index.ts        # Main entry point (Pesapal class)
+  index.ts        # Main entry point & IPN utilities
   client.ts       # Core HTTP client with Auth integration
-  auth.ts         # Authentication logic & token management
-  orders.ts       # Order resource
-  ipn.ts          # IPN resource
+  auth.ts         # Authentication logic & token caching
+  orders.ts       # Order resource with validation
+  ipn.ts          # IPN resource with validation
   errors.ts       # Error normalization
   helpers/
+    ipn.ts        # IPN signature verification & parsing
     retries.ts    # Retry logic
   types/
     types.ts      # TypeScript definitions
