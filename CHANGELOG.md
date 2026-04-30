@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/codrone/pesapal-node-sdk/compare/v1.0.0...v1.0.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* exposing ipn in core and updating documentation ([adee660](https://github.com/codrone/pesapal-node-sdk/commit/adee6600ea0eef6b1c791bcb49f6c0f2d7dd612d))
+
 # 1.0.0 (2026-04-30)
 
 
