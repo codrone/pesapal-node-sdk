@@ -6,7 +6,7 @@ export * from "./types/types.js";
 export * from "./errors.js";
 
 /**
- * The main entry point for the Pesapal SDK.
+ * The main entry point for the Pesapal v3 nodejs SDK.
  */
 export class Pesapal {
   /**
