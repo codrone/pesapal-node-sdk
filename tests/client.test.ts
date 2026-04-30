@@ -122,7 +122,13 @@ describe("PesapalClient and Resources", () => {
 
   describe("Orders", () => {
     it("should submit order", async () => {
-      const payload = { id: "123", amount: 100 } as any;
+      const payload = {
+        id: "123",
+        amount: 100,
+        currency: "UGX",
+        notification_id: "ipn-123",
+        callback_url: "https://example.com/callback",
+      } as any;
       mock
         .onPost(
           "https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest",
