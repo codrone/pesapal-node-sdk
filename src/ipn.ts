@@ -1,24 +1,29 @@
 import type { PesapalClient } from "./client.js";
+import type {
+  RegisterIPNUrlRequest,
+  RegisterIPNUrlResponse,
+} from "./types/types.js";
 
 /**
  * Resource for managing Instant Payment Notifications (IPN).
  */
+/**
+ * Resource for managing Pesapal Instant Payment Notifications (IPN).
+ */
 export class IPNResource {
-  /**
-   * Creates an instance of IPNResource.
-   * @param client The authenticated Pesapal client.
-   */
-  constructor(private client: PesapalClient) {}
+  constructor(private readonly client: PesapalClient) {}
 
   /**
-   * Registers a new IPN URL to receive payment notifications.
-   * @param payload The registration details (URL and method).
+   * Registers a publicly accessible IPN URL.
+   *
+   * The returned `ipn_id` should be used as `notification_id`
+   * when submitting an order request.
    */
-  registerIPNUrl(payload: {
-    url: string;
-    ipn_notification_type: "GET" | "POST";
-  }) {
-    return this.client.post("/api/URLSetup/RegisterIPN", payload);
+  registerIPNUrl(payload: RegisterIPNUrlRequest) {
+    return this.client.post<RegisterIPNUrlResponse>(
+      "/api/URLSetup/RegisterIPN",
+      payload,
+    );
   }
 
   /**
