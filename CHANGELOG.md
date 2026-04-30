@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/codrone/pesapal-node-sdk/compare/v1.0.2...v1.1.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* client tests now passing ([ce41191](https://github.com/codrone/pesapal-node-sdk/commit/ce411917e317150b85a51d38e53fd3296a6abb15))
+
+
+### Features
+
+* made the experince smoother as documented in the changelog ([1d3f7ad](https://github.com/codrone/pesapal-node-sdk/commit/1d3f7ad6237ba510157b2962ad60bbc7d425c51d))
+
 ## [1.0.2](https://github.com/codrone/pesapal-node-sdk/compare/v1.0.1...v1.0.2) (2026-04-30)
 
 
