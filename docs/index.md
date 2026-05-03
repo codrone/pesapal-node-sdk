@@ -1,6 +1,6 @@
 # Pesapal Node.js SDK
 
-A production-ready **Node.js / TypeScript SDK** for integrating with the Pesapal API 3.0.
+A production-ready **Node.js / TypeScript SDK** for integrating exclusively with the **Pesapal API 3.0**.
 
 This SDK provides a clean, typed, and extensible interface for handling payments, IPN (Instant Payment Notifications), and transaction status—designed with modern best practices like retries, logging, and modular architecture.
 
