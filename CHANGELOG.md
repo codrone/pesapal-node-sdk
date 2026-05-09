@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/codrone/pesapal-node-sdk/compare/v1.1.0...v1.1.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* switched to fetch from axios ([0569ddb](https://github.com/codrone/pesapal-node-sdk/commit/0569ddbe08b948ab348dbb6abb56c0f6323c2918))
+
 # [1.1.0](https://github.com/codrone/pesapal-node-sdk/compare/v1.0.2...v1.1.0) (2026-04-30)
 
 
