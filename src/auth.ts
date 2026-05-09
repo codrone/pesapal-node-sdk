@@ -1,4 +1,3 @@
-import axios, { type AxiosInstance } from "axios";
 import type { PesapalAuthResponse, PesapalConfig } from "./types/types.js";
 import { withRetries } from "./helpers/retries.js";
 
@@ -7,7 +6,7 @@ import { withRetries } from "./helpers/retries.js";
  * Includes in-memory caching to avoid redundant authentication requests.
  */
 export class PesapalAuth {
-  private http: AxiosInstance;
+  private baseURL: string;
   private authPromise: Promise<PesapalAuthResponse> | null = null;
 
   public token?: string;
@@ -18,19 +17,10 @@ export class PesapalAuth {
    * @param config The configuration options.
    */
   constructor(private config: PesapalConfig) {
-    const baseURL =
+    this.baseURL =
       config.environment === "live"
         ? "https://pay.pesapal.com/v3"
         : "https://cybqa.pesapal.com/pesapalv3";
-
-    this.http = axios.create({
-      baseURL,
-      timeout: config.timeoutMs ?? 10000,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
   }
 
   /**
@@ -74,15 +64,26 @@ export class PesapalAuth {
       async () => {
         this.config.logger?.debug?.("Pesapal auth request started");
 
-        const res = await this.http.post<PesapalAuthResponse>(
-          "/api/Auth/RequestToken",
-          {
+        const response = await fetch(`${this.baseURL}/api/Auth/RequestToken`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
             consumer_key: this.config.consumerKey,
             consumer_secret: this.config.consumerSecret,
-          },
-        );
+          }),
+          signal: AbortSignal.timeout(this.config.timeoutMs ?? 10000),
+        });
 
-        const data = res.data;
+        if (!response.ok) {
+          throw new Error(
+            `HTTP error! status: ${response.status}, message: ${response.statusText}`,
+          );
+        }
+
+        const data: PesapalAuthResponse = await response.json();
 
         this.token = data.token;
         this.expiryDate = data.expiryDate;

@@ -1,4 +1,3 @@
-import axios, { type AxiosInstance } from "axios";
 import type { PesapalConfig } from "./types/types.js";
 import { PesapalError } from "./errors.js";
 import { PesapalAuth } from "./auth.js";
@@ -9,27 +8,18 @@ import { withRetries } from "./helpers/retries.js";
  * Handles authentication, retries, and error normalization.
  */
 export class PesapalClient {
-  private http: AxiosInstance;
   private auth: PesapalAuth;
+  private baseURL: string;
 
   /**
    * Creates an instance of PesapalClient.
    * @param config The configuration options.
    */
   constructor(private config: PesapalConfig) {
-    const baseURL =
+    this.baseURL =
       config.environment === "live"
         ? "https://pay.pesapal.com/v3"
         : "https://cybqa.pesapal.com/pesapalv3";
-
-    this.http = axios.create({
-      baseURL,
-      timeout: config.timeoutMs ?? 10000,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
 
     this.auth = new PesapalAuth(config);
   }
@@ -57,22 +47,42 @@ export class PesapalClient {
             url,
           });
 
-          const res = await this.http.request<T>({
+          const headers: HeadersInit = {
+            Accept: "application/json",
+            Authorization: `Bearer ${authData.token}`,
+          };
+
+          const requestOptions: RequestInit = {
             method,
-            url,
-            data,
-            headers: {
-              Authorization: `Bearer ${authData.token}`,
-            },
-          });
+            headers,
+            signal: AbortSignal.timeout(this.config.timeoutMs ?? 10000),
+          };
+
+          if (data !== undefined) {
+            headers["Content-Type"] = "application/json";
+            requestOptions.body = JSON.stringify(data);
+          }
+
+          const response = await fetch(`${this.baseURL}${url}`, requestOptions);
+
+          if (!response.ok) {
+            const errorData = await parseJsonResponse(response);
+            throw new PesapalFetchError(
+              `HTTP error! status: ${response.status}, message: ${response.statusText}`,
+              response.status,
+              errorData,
+            );
+          }
+
+          const responseData = await parseJsonResponse<T>(response);
 
           this.config.logger?.debug?.("Pesapal request successful", {
             method,
             url,
-            status: res.status,
+            status: response.status,
           });
 
-          return res.data;
+          return responseData;
         } catch (err: any) {
           const pesapalError = this.normalizeError(err);
 
@@ -139,13 +149,39 @@ export class PesapalClient {
       return err;
     }
 
-    const error = err.response?.data?.error;
+    if (err instanceof PesapalFetchError) {
+      const error = err.errorData?.error;
+      return new PesapalError(
+        error?.message || err.message || "Pesapal request failed",
+        error?.code,
+        error?.type,
+        err.statusCode,
+      );
+    }
 
-    return new PesapalError(
-      error?.message || err.message || "Pesapal request failed",
-      error?.code,
-      error?.type,
-      err.response?.status,
-    );
+    return new PesapalError(err.message || "Pesapal request failed");
+  }
+}
+
+class PesapalFetchError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number,
+    public errorData: any,
+  ) {
+    super(message);
+    this.name = "PesapalFetchError";
+  }
+}
+
+async function parseJsonResponse<T = any>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return undefined as T;
   }
 }

@@ -36,6 +36,10 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 npm install pesapal-v3-node
 ```
 
+## Requirements
+
+Node.js 18 or newer is required because the SDK uses the native `fetch` API.
+
 ---
 
 ## 🚀 Quick Start
@@ -175,6 +179,10 @@ try {
 ---
 
 ## 🧪 Development & Testing
+
+Vitest loads `.env` before tests run. If `PESAPAL_CONSUMER_KEY` and
+`PESAPAL_CONSUMER_SECRET` are present, the Pesapal sandbox smoke test will run
+as part of `npm test`; otherwise it is skipped.
 
 ```bash
 # Run tests
