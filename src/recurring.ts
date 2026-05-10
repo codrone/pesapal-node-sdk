@@ -1,5 +1,6 @@
 import { PesapalClient } from "./client.js";
 import { PesapalError } from "./errors.js";
+import { isValidEmailAddress } from "./helpers/validation.js";
 import type {
   SubmitOrderResponse,
   SubmitRecurringOrderRequest,
@@ -82,8 +83,7 @@ export class RecurringPayments {
       );
 
     if (payload.billing_address?.email_address) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(payload.billing_address.email_address)) {
+      if (!isValidEmailAddress(payload.billing_address.email_address)) {
         throw new PesapalError(
           "Invalid email address format",
           "validation_error",
