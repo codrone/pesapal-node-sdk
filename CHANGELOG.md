@@ -1,3 +1,11 @@
+# [1.2.0](https://github.com/codrone/pesapal-node-sdk/compare/v1.1.1...v1.2.0) (2026-05-10)
+
+
+### Features
+
+* maxed out pesapal api functionalities ([5f30aab](https://github.com/codrone/pesapal-node-sdk/commit/5f30aab008dd8792f26ca3761988af39714bdd24))
+* maxed out pesapal api functionalities ([1085a23](https://github.com/codrone/pesapal-node-sdk/commit/1085a23ca9d09449908399b6fc430cefeec1588c))
+
 ## [1.1.1](https://github.com/codrone/pesapal-node-sdk/compare/v1.1.0...v1.1.1) (2026-05-09)
 
 
