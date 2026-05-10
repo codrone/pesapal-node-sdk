@@ -48,6 +48,8 @@ export interface SubmitOrderRequest {
   callback_url: string;
   notification_id: string;
   billing_address: BillingAddress;
+  account_number?: string;
+  subscription_details?: SubscriptionDetails;
 }
 
 export interface SubmitOrderResponse {
@@ -58,12 +60,59 @@ export interface SubmitOrderResponse {
   status?: string;
 }
 
+export type SubscriptionFrequency =
+  | "DAILY"
+  | "WEEKLY"
+  | "MONTHLY"
+  | "YEARLY";
+
+export interface SubscriptionDetails {
+  start_date: string;
+  end_date: string;
+  frequency: SubscriptionFrequency;
+}
+
+export interface SubmitRecurringOrderRequest extends SubmitOrderRequest {
+  account_number: string;
+  subscription_details?: SubscriptionDetails;
+}
+
 export interface TransactionStatusResponse {
   payment_method?: string;
   amount?: number;
   status?: string;
   confirmation_code?: string;
   payment_status_description?: string;
+  subscription_transaction_info?: SubscriptionTransactionInfo;
+}
+
+export interface RefundRequest {
+  confirmation_code: string;
+  amount: number;
+  username: string;
+  remarks: string;
+}
+
+export interface RefundResponse {
+  status: string;
+  message: string;
+}
+
+export interface CancelOrderRequest {
+  order_tracking_id: string;
+}
+
+export interface CancelOrderResponse {
+  status: string;
+  message: string;
+}
+
+export interface SubscriptionTransactionInfo {
+  account_reference?: string;
+  amount?: number;
+  first_name?: string;
+  last_name?: string;
+  correlation_id?: string;
 }
 
 export type IPNNotificationType = "GET" | "POST";

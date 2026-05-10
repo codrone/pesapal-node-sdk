@@ -3,6 +3,9 @@ import { PesapalClient } from "../src/client.ts";
 import { PesapalError } from "../src/errors.ts";
 import { IPNResource } from "../src/ipn.ts";
 import { Orders } from "../src/orders.ts";
+import { RecurringPayments } from "../src/recurring.ts";
+import { Refunds } from "../src/refunds.ts";
+import { OrderCancellations } from "../src/cancellations.ts";
 
 describe("PesapalClient and Resources", () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>;
@@ -302,6 +305,210 @@ describe("PesapalClient and Resources", () => {
         "https://cybqa.pesapal.com/pesapalv3/api/Transactions/GetTransactionStatus?orderTrackingId=track-123",
         "GET",
       );
+    });
+  });
+
+  describe("RecurringPayments", () => {
+    it("should submit recurring order with subscription details", async () => {
+      const payload = {
+        id: "SUB-123",
+        amount: 100,
+        currency: "UGX",
+        description: "Monthly subscription",
+        notification_id: "ipn-123",
+        callback_url: "https://example.com/callback",
+        billing_address: {
+          email_address: "customer@example.com",
+        },
+        account_number: "ACC-123",
+        subscription_details: {
+          start_date: "01-06-2026",
+          end_date: "01-06-2027",
+          frequency: "MONTHLY" as const,
+        },
+      };
+      mockFetchResponse({ order_tracking_id: "tracking-123" });
+
+      const client = new PesapalClient(config);
+      const recurring = new RecurringPayments(client);
+      const result = await recurring.submitOrder(payload);
+
+      expect(result).toEqual({ order_tracking_id: "tracking-123" });
+      expectAuthRequest();
+      expectJsonRequest(
+        1,
+        "https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest",
+        "POST",
+        payload,
+      );
+    });
+
+    it("should require account number for recurring orders", async () => {
+      const client = new PesapalClient(config);
+      const recurring = new RecurringPayments(client);
+
+      await expect(
+        recurring.submitOrder({
+          id: "SUB-123",
+          amount: 100,
+          currency: "UGX",
+          description: "Monthly subscription",
+          notification_id: "ipn-123",
+          callback_url: "https://example.com/callback",
+          billing_address: {
+            email_address: "customer@example.com",
+          },
+          account_number: "",
+        }),
+      ).rejects.toMatchObject({
+        message: "Account number is required for recurring payments",
+        status: 400,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+    });
+
+    it("should validate subscription date format", async () => {
+      const client = new PesapalClient(config);
+      const recurring = new RecurringPayments(client);
+
+      await expect(
+        recurring.submitOrder({
+          id: "SUB-123",
+          amount: 100,
+          currency: "UGX",
+          description: "Monthly subscription",
+          notification_id: "ipn-123",
+          callback_url: "https://example.com/callback",
+          billing_address: {
+            email_address: "customer@example.com",
+          },
+          account_number: "ACC-123",
+          subscription_details: {
+            start_date: "2026-06-01",
+            end_date: "01-06-2027",
+            frequency: "MONTHLY",
+          },
+        }),
+      ).rejects.toMatchObject({
+        message: "Subscription start date must use dd-MM-yyyy format",
+        status: 400,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe("Refunds", () => {
+    it("should request a refund", async () => {
+      const payload = {
+        confirmation_code: "AA11BB22",
+        amount: 100,
+        username: "John Doe",
+        remarks: "Service not offered",
+      };
+      mockFetchResponse({
+        status: "200",
+        message: "Refund request successfully",
+      });
+
+      const client = new PesapalClient(config);
+      const refunds = new Refunds(client);
+      const result = await refunds.requestRefund(payload);
+
+      expect(result).toEqual({
+        status: "200",
+        message: "Refund request successfully",
+      });
+      expectAuthRequest();
+      expectJsonRequest(
+        1,
+        "https://cybqa.pesapal.com/pesapalv3/api/Transactions/RefundRequest",
+        "POST",
+        payload,
+      );
+    });
+
+    it("should require confirmation code for refunds", async () => {
+      const client = new PesapalClient(config);
+      const refunds = new Refunds(client);
+
+      await expect(
+        refunds.requestRefund({
+          confirmation_code: "",
+          amount: 100,
+          username: "John Doe",
+          remarks: "Service not offered",
+        }),
+      ).rejects.toMatchObject({
+        message: "Confirmation code is required",
+        status: 400,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+    });
+
+    it("should validate refund amount", async () => {
+      const client = new PesapalClient(config);
+      const refunds = new Refunds(client);
+
+      await expect(
+        refunds.requestRefund({
+          confirmation_code: "AA11BB22",
+          amount: 0,
+          username: "John Doe",
+          remarks: "Service not offered",
+        }),
+      ).rejects.toMatchObject({
+        message: "Refund amount must be greater than 0",
+        status: 400,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  describe("OrderCancellations", () => {
+    it("should cancel an order", async () => {
+      const payload = {
+        order_tracking_id: "tracking-123",
+      };
+      mockFetchResponse({
+        status: "200",
+        message: "Order successfully cancelled.",
+      });
+
+      const client = new PesapalClient(config);
+      const cancellations = new OrderCancellations(client);
+      const result = await cancellations.cancelOrder(payload);
+
+      expect(result).toEqual({
+        status: "200",
+        message: "Order successfully cancelled.",
+      });
+      expectAuthRequest();
+      expectJsonRequest(
+        1,
+        "https://cybqa.pesapal.com/pesapalv3/api/Transactions/CancelOrder",
+        "POST",
+        payload,
+      );
+    });
+
+    it("should require order tracking ID for cancellations", async () => {
+      const client = new PesapalClient(config);
+      const cancellations = new OrderCancellations(client);
+
+      await expect(
+        cancellations.cancelOrder({
+          order_tracking_id: "",
+        }),
+      ).rejects.toMatchObject({
+        message: "Order tracking ID is required",
+        status: 400,
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
     });
   });
 });

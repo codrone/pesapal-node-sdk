@@ -13,6 +13,9 @@ This SDK provides a clean, typed, and extensible interface for handling payments
 - 🔁 Automatic retries with exponential backoff for transient failures
 - 🛡️ **Client-side validation** for orders and IPNs (fail-fast)
 - 🧾 Structured resources (Orders, IPN)
+- 🔁 Recurring / subscription based payment orders
+- ↩️ Refund request support
+- 🚫 Order cancellation support
 - 🔌 **IPN Security Utilities** (Signature verification & parsing)
 - 🪵 Pluggable logging hooks
 - 🌍 Sandbox & Live environment support
@@ -128,6 +131,37 @@ await pesapal.ipn.registerIPNUrl({
 });
 ```
 
+### Recurring Payments (`pesapal.recurring`)
+
+Recurring payments use Pesapal's standard `SubmitOrderRequest` endpoint with an
+additional `account_number` field and optional `subscription_details`.
+
+```ts
+const subscriptionOrder = await pesapal.recurring.submitOrder({
+  id: 'SUB-001',
+  currency: 'UGX',
+  amount: 100.00,
+  description: 'Monthly subscription',
+  callback_url: 'https://your-app.com/callback',
+  notification_id: ipn.ipn_id,
+  billing_address: {
+    email_address: 'customer@example.com',
+    phone_number: '0700000000',
+    first_name: 'John',
+    last_name: 'Doe',
+  },
+  account_number: 'ACC-001',
+  subscription_details: {
+    start_date: '01-06-2026',
+    end_date: '01-06-2027',
+    frequency: 'MONTHLY',
+  },
+});
+```
+
+`subscription_details` uses Pesapal's `dd-MM-yyyy` date format. Supported API
+frequencies are `DAILY`, `WEEKLY`, `MONTHLY`, and `YEARLY`.
+
 #### Handle IPN Webhooks (Security)
 The SDK provides helpers to securely parse and verify IPN notifications from Pesapal.
 
@@ -161,6 +195,43 @@ The SDK automatically caches your authentication token and only requests a new o
 
 ### Automatic Retries
 The SDK automatically retries requests that fail due to network issues, 5xx errors, or rate limiting (429).
+
+### Recurring IPNs
+Recurring payment notifications are sent to your registered IPN endpoint with
+`OrderNotificationType` set to `RECURRING`. Use `orders.getStatus()` with the
+received `OrderTrackingId` to fetch the transaction details.
+
+### Refunds (`pesapal.refunds`)
+
+Requests a refund for a completed payment using the confirmation code returned
+by the transaction status endpoint.
+
+```ts
+const refund = await pesapal.refunds.requestRefund({
+  confirmation_code: 'AA11BB22',
+  amount: 100.00,
+  username: 'John Doe',
+  remarks: 'Service not offered',
+});
+```
+
+Pesapal refund requests are subject to merchant approval. You cannot refund more
+than the original payment amount, only completed payments can be refunded, and
+Pesapal allows one refund request per payment.
+
+### Order Cancellations (`pesapal.cancellations`)
+
+Cancels a failed or pending order using the Pesapal order tracking ID returned
+from the original submit order request.
+
+```ts
+const cancellation = await pesapal.cancellations.cancelOrder({
+  order_tracking_id: order.order_tracking_id,
+});
+```
+
+Pesapal only supports cancellation for failed or pending payments. A cancellation
+request can only be submitted once, and processed payments cannot be cancelled.
 
 ### Normalised Errors
 All errors are caught and thrown as `PesapalError`:
@@ -205,6 +276,9 @@ src/
   client.ts       # Core HTTP client with Auth integration
   auth.ts         # Authentication logic & token caching
   orders.ts       # Order resource with validation
+  recurring.ts    # Recurring payment resource with validation
+  refunds.ts      # Refund request resource with validation
+  cancellations.ts # Order cancellation resource with validation
   ipn.ts          # IPN resource with validation
   errors.ts       # Error normalization
   helpers/
