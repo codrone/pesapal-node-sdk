@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/codrone/pesapal-node-sdk/compare/v1.2.0...v1.2.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* replace email regex validation to avoid ReDoS warning ([4dc42d3](https://github.com/codrone/pesapal-node-sdk/commit/4dc42d3f8c31c57e6a6047a694b2b4ab0f1254c4))
+
 # [1.2.0](https://github.com/codrone/pesapal-node-sdk/compare/v1.1.1...v1.2.0) (2026-05-10)
 
 
